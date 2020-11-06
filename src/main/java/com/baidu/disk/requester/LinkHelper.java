@@ -45,7 +45,7 @@ public class LinkHelper {
                 .addHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
                 .addHeader("Origin", "https://pan.baidu.com")
                 .addHeader("Referer", "https://pan.baidu.com/")
-                .addHeader("Cookie", "BDCLND=" + randsk + "; BDUSS=" + baiduYunProperties.getBduss() + ";STOKEN=c439b8a87fc323f01cca94909cb51bfdb38eab7362e91ed1f123df29033f0dd1;")
+                .addHeader("Cookie", "BDCLND=" + randsk + "; BDUSS=" + baiduYunProperties.getBduss() + ";")
                 .build();
         Map resp = objectMapper.readValue(Objects.requireNonNull(client.newCall(request).execute().body()).string(), Map.class);
         if (Integer.parseInt(String.valueOf(resp.get("errno"))) == 0) {
@@ -92,6 +92,7 @@ public class LinkHelper {
                         .addQueryParameter("expires", "1h")
                         .addQueryParameter("chkv", "1")
                         .addQueryParameter("vuk", vuk)
+                        .addQueryParameter("logid", Sign.getLogId(baiduYunProperties.getId()))
                         .build())
                 .method("GET", null)
                 .addHeader("Host", "pcs.baidu.com")
