@@ -8,14 +8,9 @@ import lombok.AllArgsConstructor;
 import okhttp3.*;
 import org.springframework.stereotype.Component;
 
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
-import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,10 +33,10 @@ public class LinkHelper {
     @SuppressWarnings({"unchecked", "rawtypes"})
     public Map<?, ?> getDLink(String fsId, String timestamp, String sign, String randsk, String shareId, String uk) throws IOException {
         MediaType mediaType = MediaType.parse("application/x-www-form-urlencoded; charset=UTF-8");
-        String encrypt = URLEncoder.encode("{\"sekey\":\"lKLU9KSNbpwBgx/J278c+8EryrADDXfD\"}", "UTF-8");
-        RequestBody body = RequestBody.create(mediaType, "encrypt=0&extra=" + encrypt + "&product=share&type=nolimit&uk=" + uk + "&primaryid=" + shareId + "&fid_list=[" + fsId + "]&path_list=&vip=2");
+        String encrypt = URLEncoder.encode("{\"sekey\":\"" + randsk + "\"}", "UTF-8");
+        RequestBody body = RequestBody.create(mediaType, "encrypt=0&extra=" + encrypt + "&product=share&uk=" + uk + "&primaryid=" + shareId + "&fid_list=[" + fsId + "]");
         Request request = new Request.Builder()
-                .url("https://pan.baidu.com/api/sharedownload?sign=" + sign + "&timestamp=" + timestamp + "&channel=chunlei&web=1&app_id=250528&clienttype=5")
+                .url("https://pan.baidu.com/api/sharedownload?sign=" + sign + "&timestamp=" + timestamp + "&channel=chunlei&web=1&app_id=250528&clienttype=5&logid=" + Sign.getLogId(baiduYunProperties.getId()))
                 .method("POST", body)
                 .addHeader("Connection", "keep-alive")
                 .addHeader("Accept", "application/json, text/javascript, */*; q=0.01")
@@ -50,7 +45,7 @@ public class LinkHelper {
                 .addHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
                 .addHeader("Origin", "https://pan.baidu.com")
                 .addHeader("Referer", "https://pan.baidu.com/")
-                .addHeader("Cookie", "BDCLND=" + randsk + "; BDUSS=" + baiduYunProperties.getBduss() + ";")
+                .addHeader("Cookie", "BDCLND=" + randsk + "; BDUSS=" + baiduYunProperties.getBduss() + ";STOKEN=c439b8a87fc323f01cca94909cb51bfdb38eab7362e91ed1f123df29033f0dd1;")
                 .build();
         Map resp = objectMapper.readValue(Objects.requireNonNull(client.newCall(request).execute().body()).string(), Map.class);
         if (Integer.parseInt(String.valueOf(resp.get("errno"))) == 0) {

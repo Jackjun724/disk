@@ -1,7 +1,13 @@
 package com.baidu.disk.algorithm;
 
 
+import lombok.SneakyThrows;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.springframework.core.io.DefaultResourceLoader;
+import org.springframework.core.io.ResourceLoader;
+
+import javax.script.*;
+import java.io.InputStreamReader;
 
 /**
  * @author JackJun
@@ -10,6 +16,22 @@ import org.apache.commons.codec.digest.DigestUtils;
 
 
 public class Sign {
+
+    private final static ScriptEngine se = new ScriptEngineManager().getEngineByName("JavaScript");
+
+    @SneakyThrows
+    public static String getLogId(String id) {
+        // 获取JS执行引擎
+        ResourceLoader loader = new DefaultResourceLoader();
+
+        se.eval(new InputStreamReader(loader.getResource("classpath:static/log.js").getInputStream()));
+        // 是否可调用
+        if (se instanceof Invocable) {
+            Invocable in = (Invocable) se;
+            return (String) in.invokeFunction("getLogID", id);
+        }
+        return "";
+    }
 
     public static String getDevUid(byte[] bdussBytes) {
         return "0|" + DigestUtils.md5Hex(bdussBytes).toUpperCase();

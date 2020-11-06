@@ -14,4 +14,5 @@ import org.springframework.stereotype.Component;
 public class BaiduYunProperties {
     private Long uid;
     private String bduss;
+    private String id;
 }
