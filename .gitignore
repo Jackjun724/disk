@@ -33,4 +33,4 @@ build/
 .vscode/
 
 ### config ###
-!**/src/main/**/resources/application-token.yaml
+**/src/main/resources/application-token.yaml
