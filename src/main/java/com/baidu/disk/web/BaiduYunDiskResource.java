@@ -35,7 +35,7 @@ public class BaiduYunDiskResource {
             Map<String, Object> res = (Map<String, Object>) helper.getDLink(fsId, timestamp, sign, randsk, shareId, uk);
             if (res.get("error_code") == null) {
                 List<Map<String, Object>> url = (List<Map<String, Object>>) res.get("urls");
-                return BaseResponse.success(url.get(0).get("url"));
+                return BaseResponse.success(((String)url.get(0).get("url")).replace("http://","https://"));
             }
         } catch (ExpireException e) {
             return BaseResponse.failure("参数过期！");

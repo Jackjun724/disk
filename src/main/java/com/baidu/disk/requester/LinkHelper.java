@@ -8,9 +8,14 @@ import lombok.AllArgsConstructor;
 import okhttp3.*;
 import org.springframework.stereotype.Component;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,11 +32,11 @@ public class LinkHelper {
     private final BaiduYunProperties baiduYunProperties;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    private final OkHttpClient client = new OkHttpClient().newBuilder().build();
+
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     public Map<?, ?> getDLink(String fsId, String timestamp, String sign, String randsk, String shareId, String uk) throws IOException {
-        OkHttpClient client = new OkHttpClient().newBuilder()
-                .build();
         MediaType mediaType = MediaType.parse("application/x-www-form-urlencoded; charset=UTF-8");
         String encrypt = URLEncoder.encode("{\"sekey\":\"lKLU9KSNbpwBgx/J278c+8EryrADDXfD\"}", "UTF-8");
         RequestBody body = RequestBody.create(mediaType, "encrypt=0&extra=" + encrypt + "&product=share&type=nolimit&uk=" + uk + "&primaryid=" + shareId + "&fid_list=[" + fsId + "]&path_list=&vip=2");
@@ -72,14 +77,10 @@ public class LinkHelper {
      * @throws IOException request Exception
      */
     public Map<?, ?> getLink(String path, String fid, String dsTime, String sign, String vuk) throws IOException {
-
-
         String devUid = Sign.getDevUid(baiduYunProperties.getBduss().getBytes());
         long time = System.currentTimeMillis() / 1000;
         String rand = Sign.getRand(baiduYunProperties.getUid(), time, devUid, baiduYunProperties.getBduss().getBytes());
 
-        OkHttpClient client = new OkHttpClient().newBuilder()
-                .build();
         Request request = new Request.Builder()
                 .url(Objects.requireNonNull(HttpUrl.parse("https://pcs.baidu.com/rest/2.0/pcs/file")).newBuilder()
                         .addQueryParameter("app_id", "250528")
@@ -96,7 +97,6 @@ public class LinkHelper {
                         .addQueryParameter("expires", "1h")
                         .addQueryParameter("chkv", "1")
                         .addQueryParameter("vuk", vuk)
-
                         .build())
                 .method("GET", null)
                 .addHeader("Host", "pcs.baidu.com")
