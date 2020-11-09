@@ -1,13 +1,18 @@
 package com.baidu.disk.requester;
 
 import com.baidu.disk.algorithm.Sign;
+import com.baidu.disk.common.IpUtil;
 import com.baidu.disk.config.BaiduYunProperties;
 import com.baidu.disk.web.exception.ExpireException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.net.HttpHeaders;
 import lombok.AllArgsConstructor;
 import okhttp3.*;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
@@ -32,20 +37,26 @@ public class LinkHelper {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     public Map<?, ?> getDLink(String fsId, String timestamp, String sign, String randsk, String shareId, String uk) throws IOException {
+        ServletRequestAttributes servletRequestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        assert servletRequestAttributes != null;
+        HttpServletRequest servletRequest = servletRequestAttributes.getRequest();
+        String ip = IpUtil.getClientIp(servletRequest);
+
         MediaType mediaType = MediaType.parse("application/x-www-form-urlencoded; charset=UTF-8");
         String encrypt = URLEncoder.encode("{\"sekey\":\"" + randsk + "\"}", "UTF-8");
         RequestBody body = RequestBody.create(mediaType, "encrypt=0&extra=" + encrypt + "&product=share&uk=" + uk + "&primaryid=" + shareId + "&fid_list=[" + fsId + "]");
         Request request = new Request.Builder()
                 .url("https://pan.baidu.com/api/sharedownload?sign=" + sign + "&timestamp=" + timestamp + "&channel=chunlei&web=1&app_id=250528&clienttype=5&logid=" + Sign.getLogId(baiduYunProperties.getId()))
                 .method("POST", body)
-                .addHeader("Connection", "keep-alive")
-                .addHeader("Accept", "application/json, text/javascript, */*; q=0.01")
-                .addHeader("X-Requested-With", "XMLHttpRequest")
-                .addHeader("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.183 Safari/537.36")
-                .addHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
-                .addHeader("Origin", "https://pan.baidu.com")
-                .addHeader("Referer", "https://pan.baidu.com/")
-                .addHeader("Cookie", "BDCLND=" + randsk + "; BDUSS=" + baiduYunProperties.getBduss() + ";")
+                .addHeader(HttpHeaders.CONNECTION, "keep-alive")
+                .addHeader(HttpHeaders.ACCEPT, "application/json, text/javascript, */*; q=0.01")
+                .addHeader(HttpHeaders.X_REQUESTED_WITH, "XMLHttpRequest")
+                .addHeader(HttpHeaders.USER_AGENT, "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.183 Safari/537.36")
+                .addHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded; charset=UTF-8")
+                .addHeader(HttpHeaders.ORIGIN, "https://pan.baidu.com")
+                .addHeader(HttpHeaders.REFERER, "https://pan.baidu.com/")
+                .addHeader(HttpHeaders.COOKIE, "BDCLND=" + randsk + "; BDUSS=" + baiduYunProperties.getBduss() + ";")
+                .addHeader(HttpHeaders.X_FORWARDED_FOR, ip)
                 .build();
         Map resp = objectMapper.readValue(Objects.requireNonNull(client.newCall(request).execute().body()).string(), Map.class);
         if (Integer.parseInt(String.valueOf(resp.get("errno"))) == 0) {
@@ -57,7 +68,7 @@ public class LinkHelper {
             dsTime = param.get("dstime");
             sign2 = URLDecoder.decode(param.get("sign"), "UTF-8");
             vuk = param.get("vuk");
-            return getLink(path, fid, dsTime, sign2, vuk);
+            return getLink(path, fid, dsTime, sign2, vuk, ip);
         }
         throw new ExpireException();
     }
@@ -68,14 +79,14 @@ public class LinkHelper {
      * @param dsTime dsTime
      * @param sign   sign
      * @param vuk    vuk
+     * @param ip     ip
      * @return Map
      * @throws IOException request Exception
      */
-    public Map<?, ?> getLink(String path, String fid, String dsTime, String sign, String vuk) throws IOException {
+    public Map<?, ?> getLink(String path, String fid, String dsTime, String sign, String vuk, String ip) throws IOException {
         String devUid = Sign.getDevUid(baiduYunProperties.getBduss().getBytes());
         long time = System.currentTimeMillis() / 1000;
         String rand = Sign.getRand(baiduYunProperties.getUid(), time, devUid, baiduYunProperties.getBduss().getBytes());
-
         Request request = new Request.Builder()
                 .url(Objects.requireNonNull(HttpUrl.parse("https://pcs.baidu.com/rest/2.0/pcs/file")).newBuilder()
                         .addQueryParameter("app_id", "250528")
@@ -95,9 +106,10 @@ public class LinkHelper {
                         .addQueryParameter("logid", Sign.getLogId(baiduYunProperties.getId()))
                         .build())
                 .method("GET", null)
-                .addHeader("Host", "pcs.baidu.com")
-                .addHeader("User-Agent", "netdisk;2.2.51.6;netdisk;10.0.63;PC;android-android")
-                .addHeader("Cookie", "BDUSS=" + baiduYunProperties.getBduss() + "; STOKEN=")
+                .addHeader(HttpHeaders.HOST, "pcs.baidu.com")
+                .addHeader(HttpHeaders.USER_AGENT, "netdisk;2.2.51.6;netdisk;10.0.63;PC;android-android")
+                .addHeader(HttpHeaders.COOKIE, "BDUSS=" + baiduYunProperties.getBduss() + "; STOKEN=")
+                .addHeader(HttpHeaders.X_FORWARDED_FOR, ip)
                 .build();
         String response = Objects.requireNonNull(client.newCall(request).execute().body()).string();
         return objectMapper.readValue(response, Map.class);

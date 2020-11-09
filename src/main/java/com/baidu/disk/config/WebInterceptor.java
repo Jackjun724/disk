@@ -1,5 +1,6 @@
 package com.baidu.disk.config;
 
+import com.baidu.disk.common.IpUtil;
 import com.baidu.disk.web.base.BaseResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.forezp.distributedlimitcore.constant.LimitType;
@@ -34,7 +35,7 @@ public class WebInterceptor extends HandlerInterceptorAdapter {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
         //限流2个维度
         //IP
-        String identifier = getClientIp(request);
+        String identifier = IpUtil.getClientIp(request);
         //api维度
         String key = request.getRequestURI();
         String composeKey = KeyUtil.compositeKey(identifier, key);
@@ -65,31 +66,5 @@ public class WebInterceptor extends HandlerInterceptorAdapter {
         } catch (IOException e) {
             log.error("Error", e);
         }
-    }
-
-    /**
-     * 获取客户端ip地址
-     */
-    public static String getClientIp(HttpServletRequest request) {
-        String ip = request.getHeader("x-forwarded-for");
-        if (ip == null || ip.trim().equals("") || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("Proxy-Client-IP");
-        }
-        if (ip == null || ip.trim().equals("") || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("WL-Proxy-Client-IP");
-        }
-        if (ip == null || ip.trim().equals("") || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getRemoteAddr();
-        }
-
-        // 多个路由时，取第一个非unknown的ip
-        final String[] arr = ip.split(",");
-        for (final String str : arr) {
-            if (!"unknown".equalsIgnoreCase(str)) {
-                ip = str;
-                break;
-            }
-        }
-        return ip;
     }
 }
