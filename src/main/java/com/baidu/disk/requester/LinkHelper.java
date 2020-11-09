@@ -7,6 +7,7 @@ import com.baidu.disk.web.exception.ExpireException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.net.HttpHeaders;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -25,6 +26,7 @@ import java.util.Objects;
  * @author JackJun
  * @date 2020/11/6 1:20 下午
  */
+@Slf4j
 @Component
 @AllArgsConstructor
 public class LinkHelper {
@@ -112,6 +114,7 @@ public class LinkHelper {
                 .addHeader(HttpHeaders.X_FORWARDED_FOR, ip)
                 .build();
         String response = Objects.requireNonNull(client.newCall(request).execute().body()).string();
+        log.info("Response ==> {}", response);
         return objectMapper.readValue(response, Map.class);
     }
 
