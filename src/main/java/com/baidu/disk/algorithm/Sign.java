@@ -22,17 +22,6 @@ public class Sign {
         return encode(valByte);
     }
 
-    public static String getRand(String uid, String time, String devUid, String bduss, String sk) {
-        String bdussSha1 = sha1(bduss);
-        String keys = new String(encrypt(decode(sk), uid));
-        System.out.println("bdussSha1: " + bdussSha1);
-        System.out.println("uid: " + uid);
-        System.out.println("sk: " + keys);
-        System.out.println("time: " + time);
-        System.out.println("devUid: " + devUid);
-        return sha1(bdussSha1 + uid + keys + time + devUid);
-    }
-
     public static String getBdstoken(String bduss) {
         return shaHex(md5(bduss.getBytes(StandardCharsets.UTF_8)));
     }
@@ -51,6 +40,7 @@ public class Sign {
     }
 
     @SneakyThrows
+    @SuppressWarnings("unused")
     public static String sha1(String msg) {
         MessageDigest digest = MessageDigest.getInstance("SHA-1");
         digest.update(msg.getBytes());
@@ -69,6 +59,13 @@ public class Sign {
         return str.toString();
     }
 
+    /**
+     * RC4
+     * @param content content
+     * @param key key
+     * @return encrypt code
+     */
+    @SuppressWarnings("unused")
     public static byte[] encrypt(byte[] content, String key) {
         // decompiled BaiduYun Disk v11 for android
         int bit = 256;
@@ -112,6 +109,12 @@ public class Sign {
         return Base64.getEncoder().encodeToString(val);
     }
 
+    /**
+     * Base64 decode
+     * @param val val
+     * @return decode val
+     */
+    @SuppressWarnings("unused")
     public static byte[] decode(String val) {
         Base64.Decoder decoder = Base64.getDecoder();
         return decoder.decode(val);
