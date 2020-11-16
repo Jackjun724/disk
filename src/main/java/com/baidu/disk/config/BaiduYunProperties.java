@@ -12,7 +12,12 @@ import org.springframework.stereotype.Component;
 @Component
 @ConfigurationProperties("baidu")
 public class BaiduYunProperties {
-    private Long uid;
+    private String uid;
     private String bduss;
-    private String id;
+    private String stoken;
+    private String bdstoken;
+    private String soPath;
+    private String apkPath;
+    private String devUid;
+    private String cuid;
 }

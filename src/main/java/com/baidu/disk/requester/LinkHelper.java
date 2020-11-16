@@ -1,7 +1,7 @@
 package com.baidu.disk.requester;
 
 import com.baidu.disk.algorithm.Sign;
-import com.baidu.disk.common.IpUtil;
+import com.baidu.disk.algorithm.SoSign;
 import com.baidu.disk.config.BaiduYunProperties;
 import com.baidu.disk.web.exception.ExpireException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,11 +13,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
-import java.net.URLDecoder;
 import java.net.URLEncoder;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -31,7 +28,10 @@ import java.util.Objects;
 @AllArgsConstructor
 public class LinkHelper {
 
+    private final SoSign soSign;
+
     private final BaiduYunProperties baiduYunProperties;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private final OkHttpClient client = new OkHttpClient().newBuilder().build();
@@ -41,14 +41,12 @@ public class LinkHelper {
     public Map<?, ?> getDLink(String fsId, String timestamp, String sign, String randsk, String shareId, String uk) throws IOException {
         ServletRequestAttributes servletRequestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         assert servletRequestAttributes != null;
-        HttpServletRequest servletRequest = servletRequestAttributes.getRequest();
-        String ip = IpUtil.getClientIp(servletRequest);
 
         MediaType mediaType = MediaType.parse("application/x-www-form-urlencoded; charset=UTF-8");
         String encrypt = URLEncoder.encode("{\"sekey\":\"" + randsk + "\"}", "UTF-8");
         RequestBody body = RequestBody.create(mediaType, "encrypt=0&extra=" + encrypt + "&product=share&uk=" + uk + "&primaryid=" + shareId + "&fid_list=[" + fsId + "]");
         Request request = new Request.Builder()
-                .url("https://pan.baidu.com/api/sharedownload?sign=" + sign + "&timestamp=" + timestamp + "&channel=chunlei&web=1&app_id=250528&clienttype=5&logid=" + Sign.getLogId(baiduYunProperties.getId()))
+                .url("https://pan.baidu.com/api/sharedownload?sign=" + sign + "&timestamp=" + timestamp + "&channel=chunlei&web=1&app_id=250528&clienttype=5&logid=" + Sign.getLogId(baiduYunProperties.getStoken()))
                 .method("POST", body)
                 .addHeader(HttpHeaders.CONNECTION, "keep-alive")
                 .addHeader(HttpHeaders.ACCEPT, "application/json, text/javascript, */*; q=0.01")
@@ -58,87 +56,75 @@ public class LinkHelper {
                 .addHeader(HttpHeaders.ORIGIN, "https://pan.baidu.com")
                 .addHeader(HttpHeaders.REFERER, "https://pan.baidu.com/")
                 .addHeader(HttpHeaders.COOKIE, "BDCLND=" + randsk + "; BDUSS=" + baiduYunProperties.getBduss() + ";")
-                .addHeader(HttpHeaders.X_FORWARDED_FOR, ip)
                 .build();
         Map resp = objectMapper.readValue(Objects.requireNonNull(client.newCall(request).execute().body()).string(), Map.class);
         if (Integer.parseInt(String.valueOf(resp.get("errno"))) == 0) {
             String dLink = (String) ((List<Map<String, Object>>) resp.get("list")).get(0).get("dlink");
-            String path, fid, dsTime, sign2, vuk;
-            Map<String, String> param = parse(dLink);
+            String path;
+            String params = dLink.substring(dLink.indexOf("?") + 1);
             path = dLink.substring(dLink.indexOf("file/") + 5, dLink.indexOf('?'));
-            fid = param.get("fid");
-            dsTime = param.get("dstime");
-            sign2 = URLDecoder.decode(param.get("sign"), "UTF-8");
-            vuk = param.get("vuk");
-            return getLink(path, fid, dsTime, sign2, vuk, ip);
+            return getLink(path, params);
         }
         throw new ExpireException();
     }
 
     /**
      * @param path   file md5
-     * @param fid    file id
-     * @param dsTime dsTime
-     * @param sign   sign
-     * @param vuk    vuk
-     * @param ip     ip
+     * @param params params
      * @return Map
      * @throws IOException request Exception
      */
-    public Map<?, ?> getLink(String path, String fid, String dsTime, String sign, String vuk, String ip) throws IOException {
-        String devUid = Sign.getDevUid(baiduYunProperties.getBduss().getBytes());
-        long time = System.currentTimeMillis() / 1000;
-        String rand = Sign.getRand(baiduYunProperties.getUid(), time, devUid, baiduYunProperties.getBduss().getBytes());
-        Request request = new Request.Builder()
-                .url(Objects.requireNonNull(HttpUrl.parse("https://pcs.baidu.com/rest/2.0/pcs/file")).newBuilder()
+    public Map<?, ?> getLink(String path, String params) throws IOException {
+        long time = System.currentTimeMillis();
+        Request urlGenerate = new Request.Builder()
+                .url(Objects.requireNonNull(HttpUrl.parse("https://d.pcs.baidu.com/rest/2.0/pcs/file?method=locatedownload&path=" + path + "&" + params)).newBuilder()
+                        .addQueryParameter("ver", "2.0")
+                        .addQueryParameter("dtype", "0")
+                        .addQueryParameter("esl", "1")
+                        .addQueryParameter("ehps", "0")
                         .addQueryParameter("app_id", "250528")
-                        .addQueryParameter("method", "locatedownload")
-                        .addQueryParameter("path", path)
-                        .addQueryParameter("ver", "2")
+                        .addQueryParameter("check_blue", "1")
+                        .addQueryParameter("bdstoken", Sign.getBdstoken(baiduYunProperties.getBduss()))
+                        .addQueryParameter("devuid", baiduYunProperties.getDevUid())
+                        .addQueryParameter("clienttype", "1")
+                        .addQueryParameter("channel", "android_6.0.1_MuMu_bd-netdisk_1018849x")
+                        .addQueryParameter("version", "8.8.0")
+                        .addQueryParameter("logid", Sign.getLogId(baiduYunProperties.getStoken()))
+                        .addQueryParameter("vip", "2")
                         .addQueryParameter("time", String.valueOf(time))
-                        .addQueryParameter("rand", rand)
-                        .addQueryParameter("devuid", devUid)
-                        .addQueryParameter("fid", fid)
-                        .addQueryParameter("dstime", dsTime)
-                        .addQueryParameter("rt", "sh")
-                        .addQueryParameter("sign", sign)
-                        .addQueryParameter("expires", "1h")
-                        .addQueryParameter("chkv", "1")
-                        .addQueryParameter("vuk", vuk)
-                        .addQueryParameter("logid", Sign.getLogId(baiduYunProperties.getId()))
+                        .addQueryParameter("cuid", baiduYunProperties.getCuid())
+                        .addQueryParameter("network_type", "wifi")
+                        .addQueryParameter("apn_id", "1_0")
+                        .addQueryParameter("freeisp", "0")
+                        .addQueryParameter("queryfree", "0")
                         .build())
-                .method("GET", null)
-                .addHeader(HttpHeaders.HOST, "pcs.baidu.com")
-                .addHeader(HttpHeaders.USER_AGENT, "netdisk;2.2.51.6;netdisk;10.0.63;PC;android-android")
-                .addHeader(HttpHeaders.COOKIE, "BDUSS=" + baiduYunProperties.getBduss() + "; STOKEN=")
-                .addHeader(HttpHeaders.X_FORWARDED_FOR, ip)
                 .build();
+
+        Request request = new Request.Builder().url(soSign.handlerUrl(urlGenerate.url().toString(), getSK()))
+                .method("GET", null)
+                .addHeader(HttpHeaders.HOST, "d.pcs.baidu.com")
+                .addHeader(HttpHeaders.USER_AGENT, "netdisk;P2SP;2.2.41.20;netdisk;8.8.0;MuMu;android-android;6.0.1;JSbridge4.0.0")
+                .addHeader(HttpHeaders.COOKIE, "BDUSS=" + baiduYunProperties.getBduss() + "; STOKEN=" + baiduYunProperties.getStoken() + ";")
+                .build();
+
+        log.debug(request.url().toString());
         String response = Objects.requireNonNull(client.newCall(request).execute().body()).string();
-        log.info("Response ==> {}", response);
+        log.debug("Response ==> {}", response);
         return objectMapper.readValue(response, Map.class);
     }
 
-    public static Map<String, String> parse(String url) {
-        if (url == null) {
-            return null;
-        }
-        url = url.trim();
-        if (url.equals("")) {
-            return null;
-        }
-        String[] urlParts = url.split("\\?");
-        //没有参数
-        if (urlParts.length == 1) {
-            return null;
-        }
-        //有参数
-        String[] params = urlParts[1].split("&");
-        Map<String, String> res = new HashMap<>();
-        for (String param : params) {
-            String[] keyValue = param.split("=");
-            res.put(keyValue[0], keyValue.length == 2 ? keyValue[1] : null);
-        }
-        return res;
+    public String getSK() throws IOException {
+        Request request = new Request.Builder()
+                .url("https://pan.baidu.com/api/report/user?action=ANDROID_ACTIVE_FRONTDESK&clienttype=1&version=8.8.0&channel=android_8.0.1_XiaoMi_bd-netdisk_1001528p")
+                .method("GET", null)
+                .addHeader("Cookie", "BDUSS=" + baiduYunProperties.getBduss() + "; STOKEN=" + baiduYunProperties.getStoken() + ";")
+                .addHeader("User-Agent", "netdisk;11.2.4;XiaoMi;android-android;8.0.1;JSbridge4.4.0")
+                .addHeader("Content-Type", "application/x-www-form-urlencoded")
+                .addHeader("Host", "pan.baidu.com")
+                .build();
+        String response = Objects.requireNonNull(client.newCall(request).execute().body()).string();
+        log.debug("Response ==> {}", response);
+        return (String) objectMapper.readValue(response, Map.class).get("uinfo");
     }
 
 }
