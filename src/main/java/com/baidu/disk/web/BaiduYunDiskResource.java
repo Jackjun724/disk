@@ -3,15 +3,11 @@ package com.baidu.disk.web;
 import com.baidu.disk.requester.LinkHelper;
 import com.baidu.disk.web.base.BaseResponse;
 import com.baidu.disk.web.exception.ExpireException;
-import com.baidu.disk.web.vo.DownloadUrl;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * @author JackJun
@@ -25,7 +21,6 @@ public class BaiduYunDiskResource {
     private final LinkHelper helper;
 
     @GetMapping("/api/download/link")
-    @SuppressWarnings("unchecked")
     public BaseResponse<?> getDownloadLink(@RequestParam("fsId") String fsId,
                                            @RequestParam("timestamp") String timestamp,
                                            @RequestParam("sign") String sign,
@@ -33,15 +28,7 @@ public class BaiduYunDiskResource {
                                            @RequestParam("shareId") String shareId,
                                            @RequestParam("uk") String uk) {
         try {
-            Map<String, Object> res = (Map<String, Object>) helper.getDLink(fsId, timestamp, sign, randsk, shareId, uk);
-            if (res.get("error_code") == null) {
-                List<Map<String, Object>> url = (List<Map<String, Object>>) res.get("urls");
-
-                return BaseResponse.success(DownloadUrl.builder()
-                        .ua(LinkHelper.UA)
-                        .url(((String) url.get(0).get("url")).replace("http://", "https://"))
-                        .build());
-            }
+            return BaseResponse.success(helper.getDLink(fsId, timestamp, sign, randsk, shareId, uk));
         } catch (ExpireException e) {
             return BaseResponse.failure("参数过期！");
         } catch (Exception e) {

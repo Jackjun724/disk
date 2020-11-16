@@ -4,6 +4,7 @@ import com.baidu.disk.algorithm.Sign;
 import com.baidu.disk.algorithm.SoSign;
 import com.baidu.disk.config.BaiduYunProperties;
 import com.baidu.disk.web.exception.ExpireException;
+import com.baidu.disk.web.vo.DownloadUrl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.net.HttpHeaders;
 import lombok.AllArgsConstructor;
@@ -40,7 +41,7 @@ public class LinkHelper {
 
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public Map<?, ?> getDLink(String fsId, String timestamp, String sign, String randsk, String shareId, String uk) throws IOException {
+    public DownloadUrl getDLink(String fsId, String timestamp, String sign, String randsk, String shareId, String uk) throws IOException {
         ServletRequestAttributes servletRequestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         assert servletRequestAttributes != null;
 
@@ -76,7 +77,7 @@ public class LinkHelper {
      * @return Map
      * @throws IOException request Exception
      */
-    public Map<?, ?> getLink(String path, String params) throws IOException {
+    public DownloadUrl getLink(String path, String params) throws IOException {
         long time = System.currentTimeMillis();
         Request urlGenerate = new Request.Builder()
                 .url(Objects.requireNonNull(HttpUrl.parse("https://d.pcs.baidu.com/rest/2.0/pcs/file?method=locatedownload&path=" + path + "&" + params)).newBuilder()
@@ -101,18 +102,12 @@ public class LinkHelper {
                         .addQueryParameter("queryfree", "0")
                         .build())
                 .build();
-
-        Request request = new Request.Builder().url(soSign.handlerUrl(urlGenerate.url().toString(), getSK()))
-                .method("GET", null)
-                .addHeader(HttpHeaders.HOST, "d.pcs.baidu.com")
-                .addHeader(HttpHeaders.USER_AGENT, UA)
-                .addHeader(HttpHeaders.COOKIE, "BDUSS=" + baiduYunProperties.getBduss() + "; STOKEN=" + baiduYunProperties.getStoken() + ";")
+        return DownloadUrl.builder()
+                .bduss(baiduYunProperties.getBduss())
+                .url(soSign.handlerUrl(urlGenerate.url().toString(), getSK()))
+                .stoken(baiduYunProperties.getStoken())
+                .ua(UA)
                 .build();
-
-        log.debug(request.url().toString());
-        String response = Objects.requireNonNull(client.newCall(request).execute().body()).string();
-        log.debug("Response ==> {}", response);
-        return objectMapper.readValue(response, Map.class);
     }
 
     public String getSK() throws IOException {

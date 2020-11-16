@@ -16,4 +16,6 @@ import lombok.NoArgsConstructor;
 public class DownloadUrl {
     private String url;
     private String ua;
+    private String bduss;
+    private String stoken;
 }
