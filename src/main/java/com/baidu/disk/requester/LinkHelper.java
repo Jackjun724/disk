@@ -30,6 +30,8 @@ public class LinkHelper {
 
     private final SoSign soSign;
 
+    public static final String UA = "netdisk;P2SP;2.2.41.20;netdisk;8.8.0;MuMu;android-android;6.0.1;JSbridge4.0.0";
+
     private final BaiduYunProperties baiduYunProperties;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -103,7 +105,7 @@ public class LinkHelper {
         Request request = new Request.Builder().url(soSign.handlerUrl(urlGenerate.url().toString(), getSK()))
                 .method("GET", null)
                 .addHeader(HttpHeaders.HOST, "d.pcs.baidu.com")
-                .addHeader(HttpHeaders.USER_AGENT, "netdisk;P2SP;2.2.41.20;netdisk;8.8.0;MuMu;android-android;6.0.1;JSbridge4.0.0")
+                .addHeader(HttpHeaders.USER_AGENT, UA)
                 .addHeader(HttpHeaders.COOKIE, "BDUSS=" + baiduYunProperties.getBduss() + "; STOKEN=" + baiduYunProperties.getStoken() + ";")
                 .build();
 

@@ -3,6 +3,7 @@ package com.baidu.disk.web;
 import com.baidu.disk.requester.LinkHelper;
 import com.baidu.disk.web.base.BaseResponse;
 import com.baidu.disk.web.exception.ExpireException;
+import com.baidu.disk.web.vo.DownloadUrl;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -35,7 +36,11 @@ public class BaiduYunDiskResource {
             Map<String, Object> res = (Map<String, Object>) helper.getDLink(fsId, timestamp, sign, randsk, shareId, uk);
             if (res.get("error_code") == null) {
                 List<Map<String, Object>> url = (List<Map<String, Object>>) res.get("urls");
-                return BaseResponse.success(((String)url.get(0).get("url")).replace("http://","https://"));
+
+                return BaseResponse.success(DownloadUrl.builder()
+                        .ua(LinkHelper.UA)
+                        .url(((String) url.get(0).get("url")).replace("http://", "https://"))
+                        .build());
             }
         } catch (ExpireException e) {
             return BaseResponse.failure("参数过期！");

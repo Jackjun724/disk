@@ -2,7 +2,6 @@ package com.baidu.disk.algorithm;
 
 import com.baidu.disk.config.BaiduYunProperties;
 import com.github.unidbg.AndroidEmulator;
-import com.github.unidbg.arm.backend.dynarmic.DynarmicLoader;
 import com.github.unidbg.linux.android.AndroidARMEmulator;
 import com.github.unidbg.linux.android.AndroidResolver;
 import com.github.unidbg.linux.android.dvm.*;
@@ -24,10 +23,6 @@ import java.security.cert.X509Certificate;
  */
 @Component
 public class SoSign extends AbstractJni {
-
-    static {
-        DynarmicLoader.forceUseDynarmic();
-    }
 
     private final BaiduYunProperties baiduYunProperties;
 

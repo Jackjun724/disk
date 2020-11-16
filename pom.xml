@@ -92,6 +92,12 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<layout>ZIP</layout>
+					<excludeGroupIds>
+						com.github.zhkl0228
+					</excludeGroupIds>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>
