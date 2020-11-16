@@ -1,19 +1,13 @@
 package com.baidu.disk;
 
-import com.baidu.disk.algorithm.Sign;
-import com.google.common.net.HttpHeaders;
-import okhttp3.HttpUrl;
-import okhttp3.Request;
-import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-
-import java.util.Objects;
+//import org.junit.jupiter.api.Test;
+//import org.springframework.boot.test.context.SpringBootTest;
 
 
-@SpringBootTest
+//@SpringBootTest
 class DemoApplicationTests {
 
-    @Test
+    //@Test
     void contextLoads() {
 
     }
