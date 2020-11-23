@@ -46,7 +46,9 @@ public class BaiduYunDiskResource {
                                           @RequestParam("uid") String uid,
                                           @RequestParam("uinfo") String uinfo) {
         try {
-            return BaseResponse.success(soSign.handlerUrl(url, uinfo,bduss, uid));
+            String handlerUrl = soSign.handlerUrl(url, uinfo, bduss, uid);
+            log.info("Sign Url = {}", handlerUrl);
+            return BaseResponse.success(handlerUrl);
         } catch (ExpireException e) {
             return BaseResponse.failure("参数过期！");
         } catch (Exception e) {
