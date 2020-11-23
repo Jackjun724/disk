@@ -33,27 +33,27 @@ public class WebInterceptor extends HandlerInterceptorAdapter {
     private LimitExcutor limitExcutor = new GuavaLimitExcutor();
 
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
-        //限流2个维度
-        //IP
-        String identifier = IpUtil.getClientIp(request);
-        //api维度
-        String key = request.getRequestURI();
-        String composeKey = KeyUtil.compositeKey(identifier, key);
-        LimitEntity limitEntity = limitEntityMap.get(composeKey);
-        if (limitEntity == null) {
-            limitEntity = new LimitEntity();
-            limitEntity.setIdentifier(identifier);
-            limitEntity.setKey(key);
-            limitEntity.setSeconds(2);
-            limitEntity.setLimtNum(1);
-            limitEntity.setLimitType(LimitType.USER_URL);
-            limitEntityMap.putIfAbsent(composeKey, limitEntity);
-        }
-
-        if (limitExcutor.tryAccess(limitEntity).getResultType() != LimitResult.ResultType.SUCCESS) {
-            returnJson(response);
-            return false;
-        }
+//        //限流2个维度
+//        //IP
+//        String identifier = IpUtil.getClientIp(request);
+//        //api维度
+//        String key = request.getRequestURI();
+//        String composeKey = KeyUtil.compositeKey(identifier, key);
+//        LimitEntity limitEntity = limitEntityMap.get(composeKey);
+//        if (limitEntity == null) {
+//            limitEntity = new LimitEntity();
+//            limitEntity.setIdentifier(identifier);
+//            limitEntity.setKey(key);
+//            limitEntity.setSeconds(2);
+//            limitEntity.setLimtNum(1);
+//            limitEntity.setLimitType(LimitType.USER_URL);
+//            limitEntityMap.putIfAbsent(composeKey, limitEntity);
+//        }
+//
+//        if (limitExcutor.tryAccess(limitEntity).getResultType() != LimitResult.ResultType.SUCCESS) {
+//            returnJson(response);
+//            return false;
+//        }
 
         return true;
     }
