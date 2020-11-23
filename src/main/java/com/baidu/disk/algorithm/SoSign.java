@@ -59,14 +59,18 @@ public class SoSign extends AbstractJni {
     private String sk;
 
     public String handlerUrl(String url, String sk) {
+        return handlerUrl(url, sk, baiduYunProperties.getBduss(), baiduYunProperties.getUid());
+    }
+
+    public String handlerUrl(String url, String sk, String bduss, String uid) {
         //获取encodeByte地址
         DvmObject<?> context = vm.resolveClass("android/content/Context").newObject(null);
         this.sk = sk;
         StringObject fullUrl = dvmClass.callStaticJniMethodObject(emulator, "handlerURL(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
                 vm.addLocalObject(context),
                 vm.addLocalObject(new StringObject(vm, url)),
-                vm.addLocalObject(new StringObject(vm, baiduYunProperties.getBduss())),
-                vm.addLocalObject(new StringObject(vm, baiduYunProperties.getUid())));
+                vm.addLocalObject(new StringObject(vm, bduss)),
+                vm.addLocalObject(new StringObject(vm, uid)));
         return fullUrl.getValue();
     }
 
