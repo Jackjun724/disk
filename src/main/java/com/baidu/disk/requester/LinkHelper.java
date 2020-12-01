@@ -4,6 +4,7 @@ import com.baidu.disk.algorithm.Sign;
 import com.baidu.disk.algorithm.SoSign;
 import com.baidu.disk.config.BaiduYunProperties;
 import com.baidu.disk.web.exception.ExpireException;
+import com.baidu.disk.web.exception.ServiceException;
 import com.baidu.disk.web.vo.DownloadUrl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.net.HttpHeaders;
@@ -106,7 +107,7 @@ public class LinkHelper {
         HttpUrl url = Objects.requireNonNull(HttpUrl.parse("https://pan.baidu.com/share/verify?shareid=" + shareId)).newBuilder()
                 .addQueryParameter("uk", uk)
                 .addQueryParameter("devuid", baiduYunProperties.getDevUid())
-                .addQueryParameter("clienttype", "1")
+                .addQueryParameter("clienttype", "12")
                 .addQueryParameter("channel", "android_6.0.1_MuMu_bd-netdisk_1018849x")
                 .addQueryParameter("version", "8.8.0")
                 .addQueryParameter("logid", Sign.getLogId(baiduYunProperties.getStoken()))
@@ -193,16 +194,18 @@ public class LinkHelper {
                 .addHeader("User-Agent", UA)
                 .build();
 
+
+
         Map resp = objectMapper.readValue(Objects.requireNonNull(client.newCall(request).execute().body()).string(), Map.class);
+
+        // 修正path
+        path = path.substring(1);
+        path = path.substring(path.indexOf("/"));
+        String title = resp.get("title").toString();
+        title = title.substring(0, title.lastIndexOf("/"));
+        path =  title + path;
+
         if (!root) {
-            path = path.substring(1);
-            path = path.substring(path.indexOf("/"));
-
-            String title = resp.get("title").toString();
-            title = title.substring(1);
-            title = title.substring(0, title.indexOf("/"));
-            path = "/" + title + path;
-
             String dir = path.substring(0, path.lastIndexOf("/"));
 
             log.info("Dir {},", path);
@@ -249,7 +252,7 @@ public class LinkHelper {
 
         if (realDlink == null) {
             log.error("不存在的文件");
-            throw new ExpireException();
+            throw new ServiceException("不存在的文件");
         }
 
         request = new Request.Builder()

@@ -67,7 +67,7 @@ public class SoSign extends AbstractJni {
     private String sk;
 
     //B8ec24caf34ef7227c66767d29ffd3fb
-    private String generate = "B8ec24caf34ef7227c66767d29ffd3fb";
+    private String generate;
 
     public String generate() {
         if (generate == null) {
