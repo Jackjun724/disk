@@ -40,4 +40,12 @@ public class BaseResponse<T> {
                 .code(-1)
                 .build();
     }
+
+    public static <T> BaseResponse<?> failure(String message, T data, int code) {
+        return BaseResponse.builder()
+                .message(message)
+                .data(data)
+                .code(code)
+                .build();
+    }
 }

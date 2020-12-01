@@ -1,9 +1,9 @@
 package com.baidu.disk.web;
 
-import com.baidu.disk.algorithm.SoSign;
 import com.baidu.disk.requester.LinkHelper;
 import com.baidu.disk.web.base.BaseResponse;
 import com.baidu.disk.web.exception.ExpireException;
+import com.baidu.disk.web.vo.DownloadUrl;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,17 +21,25 @@ public class BaiduYunDiskResource {
 
     private final LinkHelper helper;
 
-    private final SoSign soSign;
-
     @GetMapping("/api/download/link")
     public BaseResponse<?> getDownloadLink(@RequestParam("fsId") String fsId,
-                                           @RequestParam("timestamp") String timestamp,
-                                           @RequestParam("sign") String sign,
-                                           @RequestParam("randsk") String randsk,
                                            @RequestParam("shareId") String shareId,
-                                           @RequestParam("uk") String uk) {
+                                           @RequestParam("uk") String uk,
+                                           @RequestParam("pwd") String pwd,
+                                           @RequestParam("dir") String dir,
+                                           @RequestParam(value = "codeStr", required = false) String codeStr,
+                                           @RequestParam(value = "code", required = false) String code) {
         try {
-            return BaseResponse.success(helper.getDLink(fsId, timestamp, sign, randsk, shareId, uk));
+            boolean root = false;
+            if (dir.split("/").length < 3) {
+                root = true;
+            }
+            DownloadUrl downloadUrl = helper.getDLink(fsId, shareId, uk, pwd, dir, root, codeStr, code);
+            if (downloadUrl.getCodeStr() == null) {
+                return BaseResponse.success(downloadUrl);
+            } else {
+                return BaseResponse.failure("请输入验证码", downloadUrl, -10);
+            }
         } catch (ExpireException e) {
             return BaseResponse.failure("参数过期！");
         } catch (Exception e) {
@@ -40,20 +48,13 @@ public class BaiduYunDiskResource {
         return BaseResponse.failure("获取下载链接错误！");
     }
 
-    @GetMapping("/api/download/generate")
-    public BaseResponse<?> getDownloadUrl(@RequestParam("url") String url,
-                                          @RequestParam("bduss") String bduss,
-                                          @RequestParam("uid") String uid,
-                                          @RequestParam("uinfo") String uinfo) {
+    @GetMapping("/api/captcha")
+    public BaseResponse<?> getCaptcha() {
         try {
-            String handlerUrl = soSign.handlerUrl(url, uinfo, bduss, uid);
-            log.info("Sign Url = {}", handlerUrl);
-            return BaseResponse.success(handlerUrl);
-        } catch (ExpireException e) {
-            return BaseResponse.failure("参数过期！");
+            BaseResponse.success(helper.getCaptcha());
         } catch (Exception e) {
             log.error("请求异常", e);
         }
-        return BaseResponse.failure("获取下载链接错误！");
+        return BaseResponse.failure("获取验证码失败！");
     }
 }

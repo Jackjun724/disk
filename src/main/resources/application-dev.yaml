@@ -1,3 +1,4 @@
 baidu:
-  so-path: /users/jackjun/desktop/libnetdisk-security.so
+  url-so: /users/jackjun/desktop/libnetdisk-security.so
+  key-so: /users/jackjun/desktop/libBDPrecreate_V1_1.so
   apk-path: /users/jackjun/desktop/pan_8.8.0.apk

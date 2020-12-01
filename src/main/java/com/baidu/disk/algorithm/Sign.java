@@ -3,8 +3,12 @@ package com.baidu.disk.algorithm;
 
 import lombok.SneakyThrows;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidKeyException;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
 /**
@@ -24,6 +28,23 @@ public class Sign {
 
     public static String getBdstoken(String bduss) {
         return shaHex(md5(bduss.getBytes(StandardCharsets.UTF_8)));
+    }
+
+    public static byte[] hmacSHA1Encrypt(byte[] arg3, byte[] arg4) throws NoSuchAlgorithmException, InvalidKeyException {
+        byte[] res;
+        Mac mac;
+        if (arg3 != null && arg4 != null) {
+            try {
+                mac = Mac.getInstance("HmacSHA1");
+            } catch (NoSuchAlgorithmException v0) {
+                mac = Mac.getInstance("HMAC-SHA-1");
+            }
+            mac.init(new SecretKeySpec(arg3, "RAW"));
+            res = mac.doFinal(arg4);
+        } else {
+            res = null;
+        }
+        return res;
     }
 
     @SneakyThrows
@@ -61,8 +82,9 @@ public class Sign {
 
     /**
      * RC4
+     *
      * @param content content
-     * @param key key
+     * @param key     key
      * @return encrypt code
      */
     @SuppressWarnings("unused")
@@ -105,12 +127,31 @@ public class Sign {
         return iOutput;
     }
 
+    public static String customEncode(byte[] bArr, String str, boolean z) {
+        if (bArr == null) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bArr) {
+            String hexString = Integer.toHexString(b & 255);
+            if (z) {
+                hexString = hexString.toUpperCase();
+            }
+            if (hexString.length() == 1) {
+                sb.append("0");
+            }
+            sb.append(hexString).append(str);
+        }
+        return sb.toString();
+    }
+
     public static String encode(byte[] val) {
         return Base64.getEncoder().encodeToString(val);
     }
 
     /**
      * Base64 decode
+     *
      * @param val val
      * @return decode val
      */

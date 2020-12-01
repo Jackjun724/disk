@@ -6,6 +6,7 @@ import com.github.unidbg.linux.android.AndroidARMEmulator;
 import com.github.unidbg.linux.android.AndroidResolver;
 import com.github.unidbg.linux.android.dvm.*;
 import com.github.unidbg.memory.Memory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PreDestroy;
@@ -21,6 +22,7 @@ import java.security.cert.X509Certificate;
  * @author JackJun
  * @date 2020/11/14 11:08 下午
  */
+@Slf4j
 @Component
 public class SoSign extends AbstractJni {
 
@@ -41,11 +43,15 @@ public class SoSign extends AbstractJni {
         vm.setJni(this);
         vm.setVerbose(false);
         //加载so，使用armv8-64速度会快很多
-        DalvikModule dm = vm.loadLibrary(new File(baiduYunProperties.getSoPath()), false);
+        DalvikModule urlDm = vm.loadLibrary(new File(baiduYunProperties.getUrlSo()), false);
+        DalvikModule keyMakerDm = vm.loadLibrary(new File(baiduYunProperties.getKeySo()), false);
         //调用jni
-        dm.callJNI_OnLoad(emulator);
+        urlDm.callJNI_OnLoad(emulator);
+        keyMakerDm.callJNI_OnLoad(emulator);
+
         //Jni调用的类，加载so
-        dvmClass = vm.resolveClass("com/baidu/netdisk/security/URLHandler");
+        urlHandler = vm.resolveClass("com/baidu/netdisk/security/URLHandler");
+        keyMaker = vm.resolveClass("com/baidu/netdisk/kernel/encode/KeyMaker");
     }
 
     //ARM模拟器
@@ -54,19 +60,38 @@ public class SoSign extends AbstractJni {
     //vm
     private final VM vm;
 
-    private final DvmClass dvmClass;
+    private final DvmClass urlHandler;
+
+    private final DvmClass keyMaker;
 
     private String sk;
+
+    //B8ec24caf34ef7227c66767d29ffd3fb
+    private String generate = "B8ec24caf34ef7227c66767d29ffd3fb";
+
+    public String generate() {
+        if (generate == null) {
+            long time = System.currentTimeMillis();
+            StringObject resObj = keyMaker.callStaticJniMethodObject(emulator, "converToSha1Key(J;I;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+                    time,
+                    12306,
+                    vm.addLocalObject(new StringObject(vm, "FF214M12NDS90SFAG")),
+                    vm.addLocalObject(new StringObject(vm, "LKM3636U098T")));
+            generate = resObj.getValue();
+            log.info("EncryptFactor, Param: {}, 12306, FF214M12NDS90SFAG, LKM3636U098T, Result: {}", time, generate);
+        }
+        return generate;
+    }
 
     public String handlerUrl(String url, String sk) {
         return handlerUrl(url, sk, baiduYunProperties.getBduss(), baiduYunProperties.getUid());
     }
 
     public String handlerUrl(String url, String sk, String bduss, String uid) {
+        this.sk = sk;
         //获取encodeByte地址
         DvmObject<?> context = vm.resolveClass("android/content/Context").newObject(null);
-        this.sk = sk;
-        StringObject fullUrl = dvmClass.callStaticJniMethodObject(emulator, "handlerURL(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+        StringObject fullUrl = urlHandler.callStaticJniMethodObject(emulator, "handlerURL(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
                 vm.addLocalObject(context),
                 vm.addLocalObject(new StringObject(vm, url)),
                 vm.addLocalObject(new StringObject(vm, bduss)),
@@ -82,7 +107,11 @@ public class SoSign extends AbstractJni {
             case "com/baidu/netdisk/security/URLHandler->getDeviceID()Ljava/lang/String;":
                 return new StringObject(vm, baiduYunProperties.getDevUid());
             case "android/content/Context->getPackageName()Ljava/lang/String;": {
-                return new StringObject(vm, "com.baidu.netdisk");
+                String packageName = vm.getPackageName();
+                if (packageName != null) {
+                    return new StringObject(vm, packageName);
+                }
+                break;
             }
         }
 
