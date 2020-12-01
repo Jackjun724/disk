@@ -22,19 +22,18 @@ public class BaiduYunDiskResource {
     private final LinkHelper helper;
 
     @GetMapping("/api/download/link")
-    public BaseResponse<?> getDownloadLink(@RequestParam("fsId") String fsId,
-                                           @RequestParam("shareId") String shareId,
+    public BaseResponse<?> getDownloadLink(@RequestParam("shareId") String shareId,
                                            @RequestParam("uk") String uk,
                                            @RequestParam("pwd") String pwd,
-                                           @RequestParam("dir") String dir,
+                                           @RequestParam("path") String path,
                                            @RequestParam(value = "codeStr", required = false) String codeStr,
                                            @RequestParam(value = "code", required = false) String code) {
         try {
             boolean root = false;
-            if (dir.split("/").length < 3) {
+            if (path.split("/").length < 4) {
                 root = true;
             }
-            DownloadUrl downloadUrl = helper.getDLink(fsId, shareId, uk, pwd, dir, root, codeStr, code);
+            DownloadUrl downloadUrl = helper.getDLink(shareId, uk, pwd, path, root, codeStr, code);
             if (downloadUrl.getCodeStr() == null) {
                 return BaseResponse.success(downloadUrl);
             } else {

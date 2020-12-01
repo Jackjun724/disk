@@ -136,7 +136,7 @@ public class LinkHelper {
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public DownloadUrl getDLink(String fsId, String shareId, String uk, String pwd, String dir, boolean root, String codeStr, String code) throws IOException {
+    public DownloadUrl getDLink(String shareId, String uk, String pwd, String path, boolean root, String codeStr, String code) throws IOException {
         String randsk = verify(shareId, uk, pwd, codeStr, code);
 
         if (randsk == null) {
@@ -195,15 +195,17 @@ public class LinkHelper {
 
         Map resp = objectMapper.readValue(Objects.requireNonNull(client.newCall(request).execute().body()).string(), Map.class);
         if (!root) {
-            dir = dir.substring(1);
-            dir = dir.substring(dir.indexOf("/"));
+            path = path.substring(1);
+            path = path.substring(path.indexOf("/"));
 
             String title = resp.get("title").toString();
             title = title.substring(1);
             title = title.substring(0, title.indexOf("/"));
-            dir = "/" + title + dir;
+            path = "/" + title + path;
 
-            log.info("Dir {},", dir);
+            String dir = path.substring(0, path.lastIndexOf("/"));
+
+            log.info("Dir {},", path);
 
             url = Objects.requireNonNull(HttpUrl.parse("https://pan.baidu.com/share/list?shareid=" + shareId)).newBuilder()
                     .addQueryParameter("uk", uk)
@@ -240,7 +242,7 @@ public class LinkHelper {
         String realDlink = null;
         log.info("Resp {}", resp);
         for (Map<String, Object> dlink : dlinks) {
-            if (fsId.equalsIgnoreCase(dlink.get("fs_id").toString())) {
+            if (path.equalsIgnoreCase(dlink.get("path").toString())) {
                 realDlink = dlink.get("dlink").toString();
             }
         }
