@@ -3,6 +3,7 @@ package com.baidu.disk.web;
 import com.baidu.disk.requester.LinkHelper;
 import com.baidu.disk.web.base.BaseResponse;
 import com.baidu.disk.web.exception.ExpireException;
+import com.baidu.disk.web.exception.ServiceException;
 import com.baidu.disk.web.vo.DownloadUrl;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +40,8 @@ public class BaiduYunDiskResource {
             } else {
                 return BaseResponse.failure("请输入验证码", downloadUrl, -10);
             }
+        } catch (ServiceException e) {
+            return BaseResponse.failure(e.getMsg());
         } catch (ExpireException e) {
             return BaseResponse.failure("参数过期！");
         } catch (Exception e) {
