@@ -30,11 +30,7 @@ public class BaiduYunDiskResource {
                                            @RequestParam(value = "codeStr", required = false) String codeStr,
                                            @RequestParam(value = "code", required = false) String code) {
         try {
-            boolean root = false;
-            if (path.split("/").length < 4) {
-                root = true;
-            }
-            DownloadUrl downloadUrl = helper.getDLink(shareId, uk, pwd, path, root, codeStr, code);
+            DownloadUrl downloadUrl = helper.getDLink(shareId, uk, pwd, path, codeStr, code);
             if (downloadUrl.getCodeStr() == null) {
                 return BaseResponse.success(downloadUrl);
             } else {

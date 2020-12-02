@@ -107,7 +107,7 @@ public class LinkHelper {
         HttpUrl url = Objects.requireNonNull(HttpUrl.parse("https://pan.baidu.com/share/verify?shareid=" + shareId)).newBuilder()
                 .addQueryParameter("uk", uk)
                 .addQueryParameter("devuid", baiduYunProperties.getDevUid())
-                .addQueryParameter("clienttype", "12")
+                .addQueryParameter("clienttype", "1")
                 .addQueryParameter("channel", "android_6.0.1_MuMu_bd-netdisk_1018849x")
                 .addQueryParameter("version", "8.8.0")
                 .addQueryParameter("logid", Sign.getLogId(baiduYunProperties.getStoken()))
@@ -136,8 +136,8 @@ public class LinkHelper {
         }
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    public DownloadUrl getDLink(String shareId, String uk, String pwd, String path, boolean root, String codeStr, String code) throws IOException {
+    @SuppressWarnings("rawtypes")
+    public DownloadUrl getDLink(String shareId, String uk, String pwd, String path, String codeStr, String code) throws IOException {
         String randsk = verify(shareId, uk, pwd, codeStr, code);
 
         if (randsk == null) {
@@ -194,22 +194,12 @@ public class LinkHelper {
                 .addHeader("User-Agent", UA)
                 .build();
 
-
-
         Map resp = objectMapper.readValue(Objects.requireNonNull(client.newCall(request).execute().body()).string(), Map.class);
+        String realDlink = findLink(resp, path);
 
-        // 修正path
-        path = path.substring(1);
-        path = path.substring(path.indexOf("/"));
-        String title = resp.get("title").toString();
-        title = title.substring(0, title.lastIndexOf("/"));
-        path =  title + path;
-
-        if (!root) {
+        if (realDlink == null) {
             String dir = path.substring(0, path.lastIndexOf("/"));
-
-            log.info("Dir {},", path);
-
+            log.info("Dir {},", dir);
             url = Objects.requireNonNull(HttpUrl.parse("https://pan.baidu.com/share/list?shareid=" + shareId)).newBuilder()
                     .addQueryParameter("uk", uk)
                     .addQueryParameter("dir", dir)
@@ -240,15 +230,8 @@ public class LinkHelper {
                     .build();
             resp = objectMapper.readValue(Objects.requireNonNull(client.newCall(request).execute().body()).string(), Map.class);
         }
-        List<Map<String, Object>> dlinks = (List<Map<String, Object>>) resp.get("list");
         log.info("Url {},", realUrl);
-        String realDlink = null;
-        log.info("Resp {}", resp);
-        for (Map<String, Object> dlink : dlinks) {
-            if (path.equalsIgnoreCase(dlink.get("path").toString())) {
-                realDlink = dlink.get("dlink").toString();
-            }
-        }
+        realDlink = findLink(resp, path);
 
         if (realDlink == null) {
             log.error("不存在的文件");
@@ -267,13 +250,20 @@ public class LinkHelper {
         String link = response.header("Location");
 
         return DownloadUrl.builder().url(link).ua("LogStatistic").build();
-//        if (Integer.parseInt(String.valueOf(resp.get("errno"))) == 0) {
-//            String path;
-//            String params = realDlink.substring(realDlink.indexOf("?") + 1);
-//            path = realDlink.substring(realDlink.indexOf("file/") + 5, realDlink.indexOf('?'));
-//            return getLink(path, params);
-//        }
-//        throw new ExpireException();
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public String findLink(Map resp, String path) {
+        List<Map<String, Object>> dlinks = (List<Map<String, Object>>) resp.get("list");
+        String realDlink = null;
+        log.info("Resp {}", resp);
+        for (Map<String, Object> dlink : dlinks) {
+            if (path.equalsIgnoreCase(dlink.get("path").toString())) {
+                realDlink = dlink.get("dlink").toString();
+            }
+        }
+
+        return realDlink;
     }
 
     /**
