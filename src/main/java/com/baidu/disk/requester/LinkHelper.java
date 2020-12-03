@@ -64,8 +64,8 @@ public class LinkHelper {
 
     private final OkHttpClient client = new OkHttpClient().newBuilder().followRedirects(false).build();
 
-    private final String time = "1606712249691";
-    private final String rand = "b37a9bfc4cfa5f837147ca19c82449c5343247cf";
+    private final String time = "1606964047241";
+    private final String rand = "f96f4607764028f6ff5e0732e0d0cc36c0f7030c";
 
     public Captcha getCaptcha() throws IOException {
         HttpUrl url = Objects.requireNonNull(HttpUrl.parse("https://pan.baidu.com/api/getcaptcha?devuid=" + baiduYunProperties.getDevUid())).newBuilder()
@@ -250,6 +250,13 @@ public class LinkHelper {
         String link = response.header("Location");
 
         return DownloadUrl.builder().url(link).ua("LogStatistic").build();
+
+//        if (Integer.parseInt(String.valueOf(resp.get("errno"))) == 0) {
+//            String params = realDlink.substring(realDlink.indexOf("?") + 1);
+//            path = realDlink.substring(realDlink.indexOf("file/") + 5, realDlink.indexOf('?'));
+//            return getLink(path, params);
+//        }
+//        throw new ExpireException();
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
